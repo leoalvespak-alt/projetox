@@ -7,8 +7,13 @@ create table if not exists arquivos (
   hash_validacao text
 );
 
+-- GRANT PERMISSIONS (Crítico para corrigir erro 42501)
+grant all on table arquivos to anon, authenticated, service_role;
+grant all on table site_settings to anon, authenticated, service_role;
+
 -- Habilitar RLS
 alter table arquivos enable row level security;
+alter table site_settings enable row level security;
 
 -- Políticas de Segurança (RLS) - ARQUIVOS
 
@@ -59,24 +64,22 @@ insert into site_settings (id, logo_url)
 values (1, null)
 on conflict (id) do nothing;
 
--- RLS para site_settings
-alter table site_settings enable row level security;
-
+-- Políticas para SITE_SETTINGS
 drop policy if exists "Leitura pública de settings" on site_settings;
 create policy "Leitura pública de settings"
 on site_settings for select
 to public
 using (true);
 
-drop policy if exists "Update settings para anon/auth (demo)" on site_settings;
-create policy "Update settings para anon/auth (demo)"
+drop policy if exists "Update settings público (demo)" on site_settings;
+create policy "Update settings público (demo)"
 on site_settings for update
 to anon, authenticated
 using (true)
 with check (true);
 
-drop policy if exists "Insert settings (bloqueado para manter single row)" on site_settings;
-create policy "Insert settings (bloqueado para manter single row)"
+drop policy if exists "Insert settings público (demo)" on site_settings;
+create policy "Insert settings público (demo)"
 on site_settings for insert
-to authenticated
-with check (false);
+to anon, authenticated
+with check (true);
