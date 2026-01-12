@@ -10,20 +10,23 @@ create table if not exists arquivos (
 -- Habilitar RLS
 alter table arquivos enable row level security;
 
--- Políticas de Segurança (RLS)
--- 1. Leitura pública
+-- Políticas de Segurança (RLS) - ARQUIVOS
+
+-- 1. Leitura pública (necessário para /verify)
 drop policy if exists "Leitura pública de arquivos" on arquivos;
 create policy "Leitura pública de arquivos"
 on arquivos for select
 to public
 using (true);
 
--- 2. Insert (Demo)
-drop policy if exists "Insert liberado para anon (demo)" on arquivos;
-create policy "Insert liberado para anon (demo)"
+-- 2. Insert público (necessário para /admin com login "fake")
+-- Como o admin não loga no Supabase Auth, ele é visto como 'anon'
+drop policy if exists "Insert público de arquivos" on arquivos;
+create policy "Insert público de arquivos"
 on arquivos for insert
 to anon, authenticated
 with check (true);
+
 
 -- Configuração do Storage (Bucket 'documentos')
 insert into storage.buckets (id, name, public) 
@@ -37,8 +40,8 @@ on storage.objects for select
 to public
 using ( bucket_id = 'documentos' );
 
-drop policy if exists "Upload pública de documentos (demo)" on storage.objects;
-create policy "Upload pública de documentos (demo)"
+drop policy if exists "Upload público de documentos" on storage.objects;
+create policy "Upload público de documentos"
 on storage.objects for insert
 to anon, authenticated
 with check ( bucket_id = 'documentos' );
