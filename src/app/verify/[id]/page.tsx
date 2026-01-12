@@ -59,14 +59,14 @@ export default function VerifyPage() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
        {/* Header Shared */}
-       <header className="bg-white border-b border-gray-200 shadow-sm py-6">
+      <header className="bg-white border-b border-gray-200 shadow-sm py-6">
         <div className="container mx-auto flex flex-col items-center justify-center gap-3">
            {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logoUrl} alt="Logo Institucional" className="h-20 object-contain" />
           )}
           <div className="text-center">
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Portal de Transparência</h2>
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Sistema de Autenticação</h2>
             <h1 className="text-3xl font-serif text-[#0F3460] font-bold mt-1">Validação de Documentos Digitais</h1>
           </div>
         </div>
@@ -182,23 +182,23 @@ export default function VerifyPage() {
       </main>
 
       {/* Footer Shared */}
-       <footer className="mt-auto bg-[#0F3460] text-white">
+       <footer className="mt-auto bg-[#0F3460]">
         <div className="container mx-auto py-10 px-4">
-           <div className="flex flex-col items-center gap-6 text-center">
+           <div className="flex flex-col items-center gap-6 text-center text-white">
                 {logoUrl && (
                     <div className="bg-white p-3 rounded-lg">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={logoUrl} alt="Logo Footer" className="h-10 object-contain" />
                     </div>
                 )}
-               <div className="space-y-1">
-                 <p className="text-sm font-semibold tracking-wide">CONFIRMAÇÃO DE AUTENTICIDADE DE DOCUMENTOS</p>
-                 <p className="text-xs text-blue-200 max-w-lg mx-auto">
+               <div className="space-y-2">
+                 <p className="text-base font-bold tracking-wide text-white">CONFIRMAÇÃO DE AUTENTICIDADE DE DOCUMENTOS</p>
+                 <p className="text-sm text-blue-50/80 max-w-lg mx-auto font-medium">
                     Este serviço destina-se a verificar a autenticidade de documentos emitidos pela instituição. A verificação é realizada em tempo real contra a base de dados oficial.
                  </p>
                </div>
-               <div className="w-24 h-0.5 bg-blue-400/30 my-2"></div>
-               <p className="text-[10px] text-blue-300 uppercase tracking-widest">
+               <div className="w-24 h-0.5 bg-blue-400/50 my-2"></div>
+               <p className="text-xs text-blue-200 uppercase tracking-widest font-semibold">
                    © {new Date().getFullYear()} Todos os direitos reservados
                </p>
            </div>
