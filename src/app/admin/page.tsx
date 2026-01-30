@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/utils/supabase/client'
 import QRCode from 'react-qr-code'
-import { Upload, Lock, FileText, CheckCircle, AlertCircle, Loader2, Image as ImageIcon, UserPlus, GraduationCap, Mail, Key, Hash, Users, RefreshCw, ExternalLink } from 'lucide-react'
-import { createStudent } from '@/actions/auth-actions'
+import { Upload, Lock, FileText, CheckCircle, AlertCircle, Loader2, Image as ImageIcon, UserPlus, GraduationCap, Mail, Key, Hash, Users, RefreshCw, ExternalLink, Edit2, Trash2, X } from 'lucide-react'
+import { createStudent, updateStudent, deleteStudent } from '@/actions/auth-actions'
 
 interface Student {
   id: string
@@ -59,6 +59,8 @@ export default function AdminPage() {
   const [studentLoading, setStudentLoading] = useState(false)
   const [students, setStudents] = useState<Student[]>([])
   const [loadingStudents, setLoadingStudents] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null)
 
 
   useEffect(() => {
@@ -186,39 +188,84 @@ export default function AdminPage() {
     }
   }
 
-  const handleCreateStudent = async (e: React.FormEvent) => {
+  const handleEditClick = (student: Student) => {
+    setStudentForm({
+      fullName: student.full_name,
+      email: '', // Security: We don't fetch password/email here easily if it's separate, but usually email is in the student record
+      password: '', // Kept empty for security, only update if needed
+      courseName: student.course_name,
+      registrationNumber: student.registration_number,
+      enrollmentStatus: student.enrollment_status,
+      academicPeriod: student.academic_period,
+      averageGrade: student.average_grade,
+      mandatoryHoursPct: student.mandatory_hours_pct,
+      complementaryHoursPct: student.complementary_hours_pct,
+      registration_book: student.registration_book, // Fixed name to match state if needed
+      registrationBook: student.registration_book, 
+      issueDate: student.issue_date
+    })
+    setIsEditing(true)
+    setEditingStudentId(student.id)
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleDeleteClick = async (userId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este aluno? Esta ação é irreversível.')) return
+    
+    setLoadingStudents(true)
+    try {
+      const result = await deleteStudent(userId)
+      if (result.error) throw new Error(result.error)
+      alert('Aluno excluído com sucesso.')
+      fetchStudents()
+    } catch (err) {
+      alert('Erro ao excluir: ' + (err instanceof Error ? err.message : 'Erro desconhecido'))
+    } finally {
+      setLoadingStudents(false)
+    }
+  }
+
+  const handleSubmitStudent = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!studentDiplomaFile) {
+    
+    // In edit mode, diploma is optional if they don't want to change it
+    if (!isEditing && !studentDiplomaFile) {
       alert('Por favor, faça o upload do diploma do aluno.')
       return
     }
+    
     setStudentLoading(true)
 
     try {
-      // 1. Upload Diploma to generated path
-      const fileExt = studentDiplomaFile.name.split('.').pop()
-      // Use clean filename
-      const cleanName = studentDiplomaFile.name.replace(/[^a-zA-Z0-9]/g, '_')
-      const fileName = `diplomas/${Date.now()}_${cleanName}.${fileExt}`
+      let publicUrl = ''
       
-      const { error: uploadError } = await supabase.storage
-        .from('documentos')
-        .upload(fileName, studentDiplomaFile)
+      if (studentDiplomaFile) {
+        // 1. Upload Diploma
+        const fileExt = studentDiplomaFile.name.split('.').pop()
+        const cleanName = studentDiplomaFile.name.replace(/[^a-zA-Z0-9]/g, '_')
+        const fileName = `diplomas/${Date.now()}_${cleanName}.${fileExt}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('documentos')
+          .upload(fileName, studentDiplomaFile)
 
-      if (uploadError) throw uploadError
+        if (uploadError) throw uploadError
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(fileName)
+        const { data: { publicUrl: url } } = supabase.storage
+          .from('documentos')
+          .getPublicUrl(fileName)
+        publicUrl = url
+      }
 
-      // 2. Call Server Action
+      // 2. Prepare Data
       const formData = new FormData()
       formData.append('fullName', studentForm.fullName)
       formData.append('email', studentForm.email)
       formData.append('password', studentForm.password)
       formData.append('courseName', studentForm.courseName)
       formData.append('registrationNumber', studentForm.registrationNumber)
-      formData.append('diplomaUrl', publicUrl)
+      if (publicUrl) formData.append('diplomaUrl', publicUrl)
       formData.append('enrollmentStatus', studentForm.enrollmentStatus)
       formData.append('academicPeriod', studentForm.academicPeriod)
       formData.append('averageGrade', studentForm.averageGrade)
@@ -227,14 +274,16 @@ export default function AdminPage() {
       formData.append('registrationBook', studentForm.registrationBook)
       formData.append('issueDate', studentForm.issueDate)
 
-      // Use the action
-      const result = await createStudent(formData)
-
-      if (result.error) {
-        throw new Error(result.error)
+      if (isEditing && editingStudentId) {
+        formData.append('userId', editingStudentId)
+        const result = await updateStudent(formData)
+        if (result.error) throw new Error(result.error)
+        alert('Dados do aluno atualizados com sucesso!')
+      } else {
+        const result = await createStudent(formData)
+        if (result.error) throw new Error(result.error)
+        alert(`Aluno cadastrado com sucesso!\nCódigo: ${result.validationCode}`)
       }
-
-      alert(`Aluno cadastrado com sucesso!\nCódigo: ${result.validationCode}`)
       
       // Reset
       setStudentForm({
@@ -252,11 +301,13 @@ export default function AdminPage() {
         issueDate: new Date().toLocaleDateString('pt-BR')
       })
       setStudentDiplomaFile(null)
-      fetchStudents() // Refresh list
+      setIsEditing(false)
+      setEditingStudentId(null)
+      fetchStudents() 
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
-      alert('Erro ao cadastrar aluno: ' + errorMessage)
+      alert('Erro ao processar aluno: ' + errorMessage)
     } finally {
       setStudentLoading(false)
     }
@@ -319,11 +370,11 @@ export default function AdminPage() {
             <div className="md:col-span-2 space-y-8">
                 <section className="rounded-2xl border bg-white p-8 shadow-sm">
                     <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2 border-b pb-4">
-                        <UserPlus className="h-6 w-6 text-blue-600" />
-                        Cadastro de Aluno e Emissão de Diploma
+                        {isEditing ? <Edit2 className="h-6 w-6 text-amber-600" /> : <UserPlus className="h-6 w-6 text-blue-600" />}
+                        {isEditing ? 'Editar Aluno' : 'Cadastro de Aluno e Emissão de Diploma'}
                     </h2>
                     
-                    <form onSubmit={handleCreateStudent} className="grid md:grid-cols-2 gap-6">
+                    <form onSubmit={handleSubmitStudent} className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
@@ -498,11 +549,37 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        <div className="md:col-span-2 pt-4 border-t border-gray-100 flex justify-end">
+                        <div className="md:col-span-2 pt-4 border-t border-gray-100 flex justify-end gap-3">
+                             {isEditing && (
+                                 <button
+                                     type="button"
+                                     onClick={() => {
+                                         setIsEditing(false)
+                                         setEditingStudentId(null)
+                                         setStudentForm({
+                                             fullName: '',
+                                             email: '',
+                                             password: '',
+                                             courseName: '',
+                                             registrationNumber: '',
+                                             enrollmentStatus: 'CONCLUÍDO',
+                                             academicPeriod: '2023.2',
+                                             averageGrade: '8.75',
+                                             mandatoryHoursPct: '100%',
+                                             complementaryHoursPct: '100%',
+                                             registrationBook: 'LB-2024/47',
+                                             issueDate: new Date().toLocaleDateString('pt-BR')
+                                         })
+                                     }}
+                                     className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-200 transition-all flex items-center gap-2"
+                                 >
+                                     <X className="h-5 w-5" /> Cancelar
+                                 </button>
+                             )}
                              <button
                                 type="submit"
                                 disabled={studentLoading}
-                                className="bg-navy-deep text-white px-8 py-3 rounded-lg font-bold hover:bg-navy-deep/90 transition-all shadow-lg shadow-blue-900/10 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className={`${isEditing ? 'bg-amber-600' : 'bg-navy-deep'} text-white px-8 py-3 rounded-lg font-bold hover:opacity-90 transition-all shadow-lg shadow-blue-900/10 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed`}
                              >
                                 {studentLoading ? (
                                     <>
@@ -510,7 +587,8 @@ export default function AdminPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <CheckCircle className="h-5 w-5" /> Cadastrar Aluno
+                                        {isEditing ? <CheckCircle className="h-5 w-5" /> : <CheckCircle className="h-5 w-5" />}
+                                        {isEditing ? 'Salvar Alterações' : 'Cadastrar Aluno'}
                                     </>
                                 )}
                              </button>
@@ -751,7 +829,7 @@ export default function AdminPage() {
                                          </span>
                                      </td>
                                      <td className="px-6 py-4">
-                                         <div className="flex items-center gap-3">
+                                         <div className="flex items-center gap-2">
                                             <a 
                                                 href={student.diploma_url} 
                                                 target="_blank" 
@@ -761,6 +839,20 @@ export default function AdminPage() {
                                             >
                                                 <ExternalLink className="h-4 w-4" />
                                             </a>
+                                            <button 
+                                                onClick={() => handleEditClick(student)}
+                                                className="p-1.5 text-amber-600 hover:bg-amber-50 rounded transition shadow-sm border border-amber-100"
+                                                title="Editar Aluno"
+                                            >
+                                                <Edit2 className="h-4 w-4" />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleDeleteClick(student.id)}
+                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition shadow-sm border border-red-100"
+                                                title="Excluir Aluno"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
                                          </div>
                                      </td>
                                  </tr>
