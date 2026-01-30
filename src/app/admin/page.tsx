@@ -407,6 +407,7 @@ export default function AdminPage() {
                                     />
                                 </div>
                             </div>
+                        </div>
                         <div className="md:col-span-2 grid md:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
                             <h3 className="md:col-span-3 text-sm font-bold text-gray-400 uppercase tracking-widest">Configuração de Performance e Status</h3>
                             <div>
@@ -710,7 +711,7 @@ export default function AdminPage() {
                              <tr>
                                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-                                     Carregando ados...
+                                     Carregando dados...
                                  </td>
                              </tr>
                          ) : students.length === 0 ? (
