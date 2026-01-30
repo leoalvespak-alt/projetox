@@ -1,3 +1,4 @@
+
 -- Tabela de Arquivos
 create table if not exists arquivos (
   id uuid default gen_random_uuid() primary key,
@@ -83,3 +84,45 @@ create policy "Insert settings público (demo)"
 on site_settings for insert
 to anon, authenticated
 with check (true);
+
+
+-- ==============================================================================
+-- NOVAS TABELAS PARA O PORTAL DO ALUNO
+-- ==============================================================================
+
+-- Tabela de Perfis (Alunos) - Nomeada especificamente para evitar conflitos
+create table if not exists diploma_students (
+  id uuid references auth.users on delete cascade primary key,
+  full_name text,
+  course_name text,
+  registration_number text,
+  validation_code text unique,
+  diploma_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Permissões
+grant all on table diploma_students to anon, authenticated, service_role;
+
+-- Habilitar RLS
+alter table diploma_students enable row level security;
+
+-- Políticas
+drop policy if exists "Public Read diploma_students" on diploma_students;
+create policy "Public Read diploma_students"
+on diploma_students for select
+to public
+using (true);
+
+drop policy if exists "Service Role Insert diploma_students" on diploma_students;
+create policy "Service Role Insert diploma_students"
+on diploma_students for insert
+to service_role, postgres
+with check (true);
+
+-- Permitir insert autenticado para facilitar testes se necessário (ou admin simulado)
+-- drop policy if exists "Profiles Insert Public/Anon (Testing)" on profiles;
+-- create policy "Profiles Insert Public/Anon (Testing)"
+-- on profiles for insert
+-- to anon, authenticated
+-- with check (true);
