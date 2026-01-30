@@ -1,61 +1,53 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  :root {
-    /* Veritas / Uninassau Premium Theme */
-    /* Primary: Deep Navy Blue #002B49 */
-    /* Secondary: Metallic Gold #C5A059 */
-    
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+@theme {
+  --color-gold: #C5A059;
+  --color-navy-deep: #002B49;
+  
+  --color-background: hsl(222 47% 11%);
+  --color-foreground: hsl(210 40% 98%);
+  
+  --color-primary: hsl(40 48% 56%);
+  --color-primary-foreground: hsl(222 47% 11%);
+  
+  --color-secondary: hsl(216 100% 14%);
+  --color-secondary-foreground: hsl(210 40% 98%);
+  
+  --color-muted: hsl(217 33% 17%);
+  --color-muted-foreground: hsl(215 20% 65%);
+  
+  --color-accent: hsl(40 48% 56%);
+  --color-accent-foreground: hsl(222 47% 11%);
+  
+  --color-destructive: hsl(0 63% 31%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  
+  --color-border: hsl(217 33% 25%);
+  --color-input: hsl(217 33% 25%);
+  --color-ring: hsl(40 48% 56%);
 
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 98%;
+  --radius-sharp: 0px;
+  
+  --animate-fade-in: fadeIn 0.8s ease-out forwards;
+  --animate-slide-up: slideUp 0.8s ease-out forwards;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 40 48% 56%; /* Gold as Primary Action */
-    --primary-foreground: 222 47% 11%;
-
-    --secondary: 216 100% 14%; /* Deep Navy */
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 40 48% 56%;
-    --accent-foreground: 222 47% 11%;
-
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217 33% 25%;
-    --input: 217 33% 25%;
-    --ring: 40 48% 56%;
-
-    --radius: 0px; /* Sharp edges for institutional trust */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
-  .light {
-     /* Optional Light Mode Overrides if needed, but we default to Dark Premium */
-    --background: 0 0% 98%;
-    --foreground: 222 47% 11%;
-    --primary: 216 100% 14%;
-    --primary-foreground: 210 40% 98%;
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
 
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    @apply border-border;
   }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    @apply antialiased selection:bg-[#C5A059] selection:text-[#002B49];
+    @apply bg-background text-foreground antialiased selection:bg-gold selection:text-navy-deep;
   }
 }
 
@@ -65,38 +57,20 @@
   }
   
   .glass-panel {
-    @apply bg-opacity-10 backdrop-blur-md bg-white border border-white/10;
+    @apply bg-white/10 backdrop-blur-md border border-white/10;
   }
 
   .text-gold {
-    color: #C5A059;
+    @apply text-gold;
   }
   
   .bg-navy-deep {
-    background-color: #002B49;
-  }
-
-  .animate-fade-in {
-    animation: fadeIn 0.8s ease-out forwards;
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.8s ease-out forwards;
+    @apply bg-navy-deep;
   }
   
   .delay-100 { animation-delay: 100ms; }
   .delay-200 { animation-delay: 200ms; }
   .delay-300 { animation-delay: 300ms; }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .safe-top {
