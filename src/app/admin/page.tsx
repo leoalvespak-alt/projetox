@@ -200,7 +200,6 @@ export default function AdminPage() {
       averageGrade: student.average_grade,
       mandatoryHoursPct: student.mandatory_hours_pct,
       complementaryHoursPct: student.complementary_hours_pct,
-      registration_book: student.registration_book, // Fixed name to match state if needed
       registrationBook: student.registration_book, 
       issueDate: student.issue_date
     })
