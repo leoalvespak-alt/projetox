@@ -14,6 +14,13 @@ interface Student {
   validation_code: string
   diploma_url: string
   created_at: string
+  enrollment_status: string
+  academic_period: string
+  average_grade: string
+  mandatory_hours_pct: string
+  complementary_hours_pct: string
+  registration_book: string
+  issue_date: string
 }
 
 export default function AdminPage() {
@@ -26,10 +33,12 @@ export default function AdminPage() {
   const [uploadedId, setUploadedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Logo Upload State
+  // Site Settings State (Logo & Name)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoUploading, setLogoUploading] = useState(false)
   const [currentLogo, setCurrentLogo] = useState<string | null>(null)
+  const [institutionName, setInstitutionName] = useState('Veritas Uninassau')
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
 
   // Student Registration State
   const [studentForm, setStudentForm] = useState({
@@ -37,7 +46,14 @@ export default function AdminPage() {
     email: '',
     password: '',
     courseName: '',
-    registrationNumber: ''
+    registrationNumber: '',
+    enrollmentStatus: 'CONCLUÍDO',
+    academicPeriod: '2023.2',
+    averageGrade: '8.75',
+    mandatoryHoursPct: '100%',
+    complementaryHoursPct: '100%',
+    registrationBook: 'LB-2024/47',
+    issueDate: new Date().toLocaleDateString('pt-BR')
   })
   const [studentDiplomaFile, setStudentDiplomaFile] = useState<File | null>(null)
   const [studentLoading, setStudentLoading] = useState(false)
@@ -46,7 +62,7 @@ export default function AdminPage() {
 
 
   useEffect(() => {
-    fetchLogo()
+    fetchSettings()
     if (isAuthenticated) fetchStudents()
   }, [isAuthenticated])
 
@@ -61,9 +77,28 @@ export default function AdminPage() {
     setLoadingStudents(false)
   }
 
-  const fetchLogo = async () => {
-    const { data } = await supabase.from('site_settings').select('logo_url').single()
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('site_settings').select('logo_url, institution_name').single()
     if (data?.logo_url) setCurrentLogo(data.logo_url)
+    if (data?.institution_name) setInstitutionName(data.institution_name)
+  }
+
+  const handleUpdateSettings = async () => {
+    setIsSavingSettings(true)
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .update({ institution_name: institutionName })
+        .eq('id', 1)
+
+      if (error) throw error
+      alert('Configurações salvas com sucesso!')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
+      alert('Erro ao salvar configurações: ' + errorMessage)
+    } finally {
+      setIsSavingSettings(false)
+    }
   }
 
   const handleLogin = () => {
@@ -184,6 +219,13 @@ export default function AdminPage() {
       formData.append('courseName', studentForm.courseName)
       formData.append('registrationNumber', studentForm.registrationNumber)
       formData.append('diplomaUrl', publicUrl)
+      formData.append('enrollmentStatus', studentForm.enrollmentStatus)
+      formData.append('academicPeriod', studentForm.academicPeriod)
+      formData.append('averageGrade', studentForm.averageGrade)
+      formData.append('mandatoryHoursPct', studentForm.mandatoryHoursPct)
+      formData.append('complementaryHoursPct', studentForm.complementaryHoursPct)
+      formData.append('registrationBook', studentForm.registrationBook)
+      formData.append('issueDate', studentForm.issueDate)
 
       // Use the action
       const result = await createStudent(formData)
@@ -200,7 +242,14 @@ export default function AdminPage() {
         email: '',
         password: '',
         courseName: '',
-        registrationNumber: ''
+        registrationNumber: '',
+        enrollmentStatus: 'CONCLUÍDO',
+        academicPeriod: '2023.2',
+        averageGrade: '8.75',
+        mandatoryHoursPct: '100%',
+        complementaryHoursPct: '100%',
+        registrationBook: 'LB-2024/47',
+        issueDate: new Date().toLocaleDateString('pt-BR')
       })
       setStudentDiplomaFile(null)
       fetchStudents() // Refresh list
@@ -216,7 +265,7 @@ export default function AdminPage() {
   // Not authenticated view
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 animate-in fade-in duration-500">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 animate-in fade-in duration-500 text-gray-900">
         <div className="w-full max-w-md space-y-6 rounded-2xl border bg-white p-8 shadow-xl ring-1 ring-black/5">
           <div className="text-center space-y-2">
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-2">
@@ -250,7 +299,7 @@ export default function AdminPage() {
 
   // Authenticated Dashboard
   return (
-    <div className="min-h-screen bg-gray-50/50 p-6 md:p-12">
+    <div className="min-h-screen bg-gray-50/50 p-6 md:p-12 text-gray-900">
       <div className="mx-auto max-w-5xl space-y-8">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -358,7 +407,82 @@ export default function AdminPage() {
                                     />
                                 </div>
                             </div>
+                        <div className="md:col-span-2 grid md:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
+                            <h3 className="md:col-span-3 text-sm font-bold text-gray-400 uppercase tracking-widest">Configuração de Performance e Status</h3>
                             <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Status da Matrícula</label>
+                                <select 
+                                    className="w-full rounded-lg border border-gray-300 py-2.5 px-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    value={studentForm.enrollmentStatus}
+                                    onChange={e => setStudentForm({...studentForm, enrollmentStatus: e.target.value})}
+                                >
+                                    <option value="CONCLUÍDO">CONCLUÍDO</option>
+                                    <option value="CURSANDO">CURSANDO</option>
+                                    <option value="TRANCADO">TRANCADO</option>
+                                    <option value="CANCELADO">CANCELADO</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Período Letivo</label>
+                                <input 
+                                    type="text"
+                                    className="w-full rounded-lg border border-gray-300 py-2.5 px-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Ex: 2023.2"
+                                    value={studentForm.academicPeriod}
+                                    onChange={e => setStudentForm({...studentForm, academicPeriod: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Média Geral</label>
+                                <input 
+                                    type="text"
+                                    className="w-full rounded-lg border border-gray-300 py-2.5 px-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Ex: 8.75"
+                                    value={studentForm.averageGrade}
+                                    onChange={e => setStudentForm({...studentForm, averageGrade: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Carga Horária Obrigatória (%)</label>
+                                <input 
+                                    type="text"
+                                    className="w-full rounded-lg border border-gray-300 py-2.5 px-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Ex: 100%"
+                                    value={studentForm.mandatoryHoursPct}
+                                    onChange={e => setStudentForm({...studentForm, mandatoryHoursPct: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Carga Horária Complementar (%)</label>
+                                <input 
+                                    type="text"
+                                    className="w-full rounded-lg border border-gray-300 py-2.5 px-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Ex: 100%"
+                                    value={studentForm.complementaryHoursPct}
+                                    onChange={e => setStudentForm({...studentForm, complementaryHoursPct: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Livro de Registro</label>
+                                <input 
+                                    type="text"
+                                    className="w-full rounded-lg border border-gray-300 py-2.5 px-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Ex: LB-2024/47"
+                                    value={studentForm.registrationBook}
+                                    onChange={e => setStudentForm({...studentForm, registrationBook: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Data de Emissão</label>
+                                <input 
+                                    type="text"
+                                    className="w-full rounded-lg border border-gray-300 py-2.5 px-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Ex: 30/01/2026"
+                                    value={studentForm.issueDate}
+                                    onChange={e => setStudentForm({...studentForm, issueDate: e.target.value})}
+                                />
+                            </div>
+                            <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Diploma (PDF)</label>
                                 <input 
                                     type="file"
@@ -377,7 +501,7 @@ export default function AdminPage() {
                              <button
                                 type="submit"
                                 disabled={studentLoading}
-                                className="bg-[#0F3460] text-white px-8 py-3 rounded-lg font-bold hover:bg-[#154175] transition-all shadow-lg shadow-blue-900/10 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="bg-navy-deep text-white px-8 py-3 rounded-lg font-bold hover:bg-navy-deep/90 transition-all shadow-lg shadow-blue-900/10 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                              >
                                 {studentLoading ? (
                                     <>
@@ -385,7 +509,7 @@ export default function AdminPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <ChecksAndPlusIcon /> Cadastrar Aluno
+                                        <CheckCircle className="h-5 w-5" /> Cadastrar Aluno
                                     </>
                                 )}
                              </button>
@@ -396,38 +520,62 @@ export default function AdminPage() {
             
             {/* Existing Tools Column */}
             <div className="md:col-span-2 grid md:grid-cols-2 gap-8">
-                 {/* Config Section */}
-                <section className="rounded-2xl border bg-white p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <ImageIcon className="h-5 w-5 text-gray-500" />
-                        Logo do Sistema
-                    </h2>
-                    <div className="space-y-4">
-                        <input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-                            className="block w-full text-sm text-gray-500
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-full file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-primary/10 file:text-primary
-                            hover:file:bg-primary/20 cursor-pointer"
-                        />
-                         <div className="flex items-center gap-4">
+                {/* Config Section */}
+                <section className="rounded-2xl border bg-white p-6 shadow-sm space-y-6">
+                    <div>
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <ImageIcon className="h-5 w-5 text-gray-500" />
+                            Identidade Visual
+                        </h2>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-4">
+                                {currentLogo && (
+                                    <div className="h-14 w-14 p-1.5 bg-gray-50 rounded border flex items-center justify-center overflow-hidden">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={currentLogo} alt="Logo" className="max-h-full max-w-full object-contain" />
+                                    </div>
+                                )}
+                                <div className="flex-1">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                                        className="block w-full text-xs text-gray-500
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-lg file:border-0
+                                        file:text-xs file:font-semibold
+                                        file:bg-primary/10 file:text-primary
+                                        hover:file:bg-primary/20 cursor-pointer"
+                                    />
+                                </div>
+                            </div>
                             <button
                                 onClick={handleLogoUpload}
                                 disabled={!logoFile || logoUploading}
-                                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 flex-1"
+                                className="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-gray-800 disabled:opacity-50 transition-all active:scale-[0.98]"
                             >
-                                {logoUploading ? 'Enviando...' : 'Atualizar Logo'}
+                                {logoUploading ? 'Enviando...' : 'Fazer Upload da Logo'}
                             </button>
-                            {currentLogo && (
-                                <div className="h-10 w-auto p-1 bg-gray-50 rounded border">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={currentLogo} alt="Logo" className="h-full object-contain" />
-                                </div>
-                            )}
+                        </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-gray-100">
+                        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Nome da Instituição</h2>
+                        <div className="flex gap-2">
+                            <input 
+                                type="text"
+                                value={institutionName}
+                                onChange={(e) => setInstitutionName(e.target.value)}
+                                className="flex-1 rounded-lg border border-gray-300 py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                placeholder="Ex: Veritas Uninassau"
+                            />
+                            <button 
+                                onClick={handleUpdateSettings}
+                                disabled={isSavingSettings}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-[0.98]"
+                            >
+                                {isSavingSettings ? 'Salvando...' : 'Salvar'}
+                            </button>
                         </div>
                     </div>
                 </section>
@@ -550,11 +698,11 @@ export default function AdminPage() {
                      <thead className="bg-gray-50 text-gray-500 font-medium">
                          <tr>
                              <th className="px-6 py-4">Nome do Aluno</th>
-                             <th className="px-6 py-4">Curso</th>
-                             <th className="px-6 py-4">Matrícula</th>
-                             <th className="px-6 py-4">Código de Validação</th>
-                             <th className="px-6 py-4">Diploma</th>
-                             <th className="px-6 py-4">Data Registro</th>
+                             <th className="px-6 py-4">Curso / Matrícula</th>
+                             <th className="px-6 py-4">Status / Período</th>
+                             <th className="px-6 py-4">Média / Horas</th>
+                             <th className="px-6 py-4">Validação</th>
+                             <th className="px-6 py-4">Ações</th>
                          </tr>
                      </thead>
                      <tbody className="divide-y divide-gray-100">
@@ -574,26 +722,45 @@ export default function AdminPage() {
                          ) : (
                              students.map((student) => (
                                  <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                                     <td className="px-6 py-4 font-medium text-gray-900">{student.full_name}</td>
-                                     <td className="px-6 py-4 text-gray-600">{student.course_name}</td>
-                                     <td className="px-6 py-4 text-gray-500 font-mono">{student.registration_number || '-'}</td>
                                      <td className="px-6 py-4">
-                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 font-mono">
+                                         <div className="font-medium text-gray-900">{student.full_name}</div>
+                                         <div className="text-[10px] text-gray-400 font-mono">{student.id.substring(0,8)}...</div>
+                                     </td>
+                                     <td className="px-6 py-4">
+                                         <div className="text-gray-900 font-medium">{student.course_name}</div>
+                                         <div className="text-xs text-gray-500 font-mono">{student.registration_number || '-'}</div>
+                                     </td>
+                                     <td className="px-6 py-4">
+                                         <div className="flex flex-col gap-1">
+                                             <span className={`inline-flex w-fit items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                 student.enrollment_status === 'CONCLUÍDO' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                                             }`}>
+                                                 {student.enrollment_status}
+                                             </span>
+                                             <span className="text-xs text-gray-500">{student.academic_period}</span>
+                                         </div>
+                                     </td>
+                                     <td className="px-6 py-4">
+                                         <div className="text-gray-900 font-bold text-sm">{student.average_grade}</div>
+                                         <div className="text-[10px] text-gray-500">H: {student.mandatory_hours_pct} | C: {student.complementary_hours_pct}</div>
+                                     </td>
+                                     <td className="px-6 py-4">
+                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 font-mono">
                                              {student.validation_code}
                                          </span>
                                      </td>
                                      <td className="px-6 py-4">
-                                         <a 
-                                             href={student.diploma_url} 
-                                             target="_blank" 
-                                             rel="noreferrer"
-                                             className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
-                                         >
-                                             PDF <ExternalLink className="h-3 w-3" />
-                                         </a>
-                                     </td>
-                                     <td className="px-6 py-4 text-gray-500">
-                                         {new Date(student.created_at).toLocaleDateString()}
+                                         <div className="flex items-center gap-3">
+                                            <a 
+                                                href={student.diploma_url} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition shadow-sm border border-blue-100"
+                                                title="Ver Diploma"
+                                            >
+                                                <ExternalLink className="h-4 w-4" />
+                                            </a>
+                                         </div>
                                      </td>
                                  </tr>
                              ))
@@ -608,10 +775,4 @@ export default function AdminPage() {
   )
 }
 
-function ChecksAndPlusIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>
-        </svg>
-    )
-}
+

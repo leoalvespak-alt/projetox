@@ -24,6 +24,15 @@ export async function createStudent(formData: FormData) {
   const registrationNumber = formData.get('registrationNumber') as string
   const diplomaUrl = formData.get('diplomaUrl') as string
   
+  const enrollmentStatus = formData.get('enrollmentStatus') as string || 'CONCLUÍDO'
+  const academicPeriod = formData.get('academicPeriod') as string || '2023.2'
+  const averageGrade = formData.get('averageGrade') as string || '8.75'
+  const mandatoryHoursPct = formData.get('mandatoryHoursPct') as string || '100%'
+  const complementaryHoursPct = formData.get('complementaryHoursPct') as string || '100%'
+  const registrationBook = formData.get('registrationBook') as string || 'LB-2024/47'
+  
+  const issueDate = formData.get('issueDate') as string || new Date().toLocaleDateString('pt-BR')
+  
   // Generate a random validation code if not provided
   // Format: UUID or simplified code. Let's use UUID for uniqueness.
   const validationCode = formData.get('validationCode') as string || crypto.randomUUID()
@@ -55,6 +64,13 @@ export async function createStudent(formData: FormData) {
       registration_number: registrationNumber,
       diploma_url: diplomaUrl,
       validation_code: validationCode,
+      enrollment_status: enrollmentStatus,
+      academic_period: academicPeriod,
+      average_grade: averageGrade,
+      mandatory_hours_pct: mandatoryHoursPct,
+      complementary_hours_pct: complementaryHoursPct,
+      registration_book: registrationBook,
+      issue_date: issueDate
     })
 
   if (profileError) {
